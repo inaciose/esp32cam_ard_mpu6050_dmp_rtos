@@ -16,26 +16,19 @@
 // ###########     ATENTION - ATENTION     ########################
 // ################################################################
 
-#include <Wire.h>
-
 #define M_PI 3.14159265358979323846
 
 #define __PGMSPACE_H_ 1 // stop compile errors of redefined typedefs and defines with ESP32-Arduino
-
-#define USE_MPU
-
-bool connected = true;
 
 // ==================================================
 
 // I2Cdev and MPU6050 must be installed as libraries, or else the .cpp/.h files
 // for both classes must be in the include path of your project
+#include <Wire.h>
 #include "I2Cdev.h"
-
 #include "MPU6050_6Axis_MotionApps20.h"
 
 MPU6050 mpu;
-#define OUTPUT_READABLE_YAWPITCHROLL
 
 // MPU control/status vars
 bool dmpReady = false;  // set true if DMP init was successful
@@ -83,7 +76,6 @@ void sensorTask( void * pvParameters ) {
   Serial.println(taskMessage);
 
   // join I2C bus (I2Cdev library doesn't do this automatically)
-
   Wire.begin(14, 15, 4000000);
 
   delay(1000);
@@ -209,8 +201,7 @@ void sensorTask( void * pvParameters ) {
         // (this lets us immediately read more without waiting for an interrupt)
         fifoCount -= packetSize;
 
-#ifdef OUTPUT_READABLE_YAWPITCHROLL
-        // display Euler angles in degrees
+        //OUTPUT_READABLE_YAWPITCHROLL
         mpu.dmpGetQuaternion(&q, fifoBuffer);
         mpu.dmpGetGravity(&gravity, &q);
         mpu.dmpGetYawPitchRoll(ypr, &q, &gravity);
@@ -220,16 +211,6 @@ void sensorTask( void * pvParameters ) {
         
         // for different board orientation. But Yaw doesn't work properly with this.
         // mpu.dmpGetYawPitchRollVertical(ypr, &q, &gravity);
-        
-        //        Serial.print("ypr\t");
-        //        Serial.print(ypr[0] * 180 / M_PI);
-        //        Serial.print("\t");
-        //        Serial.print(ypr[1] * 180 / M_PI);
-        //        Serial.print("\t");
-        //        Serial.println(ypr[2] * 180 / M_PI);
-        //                reportYpr = true;
-
-#endif
 
         mpuDataCounter++;
 
@@ -237,10 +218,6 @@ void sensorTask( void * pvParameters ) {
         blinkState = !blinkState;
         digitalWrite(LED_PIN, blinkState);
       }
-
-    //} else { // not connected
-    //  vTaskDelay(10); // wait and feed the watchdog timer
-    //}
   } // end of loop
 } // end sensorTask
 
@@ -269,46 +246,19 @@ void setup() {
 }
 
 void loop() {
-  //if (connected) {
-
     if (mpuDataCounter != mpuDataCounterPrev) {
 
-      Serial.print(" mpu ");
-      //      Serial.print(" ypr ");
-      Serial.print(ypr[0] * 180 / M_PI);
-      Serial.print(" ");
-      Serial.print(ypr[1] * 180 / M_PI);
-      Serial.print(" ");
-      Serial.print(ypr[2] * 180 / M_PI);
-      Serial.println("");
-      /*
-      //      Serial.print(" aworld ");
-      Serial.print(aaWorld.x);
-      Serial.print(" ");
-      Serial.print(aaWorld.y);
-      Serial.print(" ");
-      Serial.print(aaWorld.z);
-      Serial.print(" ");
-
-      //      Serial.print(" areal ");
-      Serial.print(aaReal.x);
-      Serial.print(" ");
-      Serial.print(aaReal.y);
-      Serial.print(" ");
-      Serial.println(aaReal.z);
-
-      Serial.print(" ");
-      Serial.print(gravity.x);
-      Serial.print(" ");
-      Serial.print(gravity.y);
-      Serial.print(" ");
-      Serial.print(gravity.z);
-      */
+      Serial.print(" mpu ypr ");
+      mpu.dmpGetQuaternion(&q, fifoBuffer);
+      mpu.dmpGetGravity(&gravity, &q);
+      mpu.dmpGetYawPitchRoll(ypr, &q, &gravity);
+      Serial.print("ypr\t");
+      Serial.print(ypr[0] * 180/M_PI);
+      Serial.print("\t");
+      Serial.print(ypr[1] * 180/M_PI);
+      Serial.print("\t");
+      Serial.println(ypr[2] * 180/M_PI);
 
       mpuDataCounterPrev = mpuDataCounter;
     }
-
-  //} else { // not connected
-  //  vTaskDelay(10); // wait and feed the watchdog timer.
-  //}
 }
